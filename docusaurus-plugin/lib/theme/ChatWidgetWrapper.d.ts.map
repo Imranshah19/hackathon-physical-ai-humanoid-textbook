@@ -1,0 +1,1 @@
+{"version":3,"file":"ChatWidgetWrapper.d.ts","sourceRoot":"","sources":["../../src/theme/ChatWidgetWrapper.tsx"],"names":[],"mappings":"AAAA;;;;GAIG;AAEH,OAAO,KAA8B,MAAM,OAAO,CAAC;AAInD,UAAU,sBAAsB;IAC9B,QAAQ,CAAC,EAAE,KAAK,CAAC,SAAS,CAAC;CAC5B;AASD;;;GAGG;AACH,MAAM,CAAC,OAAO,UAAU,iBAAiB,CAAC,EACxC,QAAQ,GACT,EAAE,sBAAsB,GAAG,GAAG,CAAC,OAAO,CAgDtC"}

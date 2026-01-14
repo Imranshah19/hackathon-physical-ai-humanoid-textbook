@@ -1,0 +1,373 @@
+openapi: 3.0.3
+info:
+  title: User Profile API
+  description: |
+    Profile management endpoints for content personalization.
+    These routes are handled by the FastAPI backend with auth middleware.
+  version: 1.0.0
+
+servers:
+  - url: http://localhost:8000
+    description: Local FastAPI backend
+  - url: https://api.textbook.example.com
+    description: Production API
+
+tags:
+  - name: Profile
+    description: User profile management
+  - name: Personalization
+    description: Content personalization preferences
+
+paths:
+  /api/profile:
+    get:
+      tags: [Profile]
+      summary: Get current user profile
+      description: Retrieve user's personalization profile (US4)
+      operationId: getProfile
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Profile retrieved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProfileResponse'
+        '401':
+          description: Not authenticated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Profile not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+    patch:
+      tags: [Profile]
+      summary: Update user profile
+      description: Update profile fields (FR-011, US4)
+      operationId: updateProfile
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProfileUpdate'
+      responses:
+        '200':
+          description: Profile updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProfileResponse'
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Not authenticated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /api/profile/complete:
+    post:
+      tags: [Profile]
+      summary: Complete profile wizard
+      description: Submit all profile fields at once (US1 registration flow)
+      operationId: completeProfile
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProfileComplete'
+      responses:
+        '200':
+          description: Profile completed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProfileResponse'
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Not authenticated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /api/profile/skip:
+    post:
+      tags: [Profile]
+      summary: Skip profile completion
+      description: Mark profile as skipped with reminder (FR-010)
+      operationId: skipProfile
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Profile skipped
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  nextReminder:
+                    type: string
+                    format: date-time
+                    description: When to show next reminder
+        '401':
+          description: Not authenticated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /api/profile/options:
+    get:
+      tags: [Profile]
+      summary: Get profile options
+      description: Get available options for profile fields (FR-007, FR-008, FR-009)
+      operationId: getProfileOptions
+      responses:
+        '200':
+          description: Options retrieved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProfileOptions'
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: Session token from better-auth
+
+  schemas:
+    ProfileResponse:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        userId:
+          type: string
+          format: uuid
+        softwareBackground:
+          type: array
+          items:
+            $ref: '#/components/schemas/SoftwareOption'
+          description: FR-007 multi-select
+        hardwareAccess:
+          type: array
+          items:
+            $ref: '#/components/schemas/HardwareOption'
+          description: FR-008 multi-select
+        experienceLevel:
+          $ref: '#/components/schemas/ExperienceLevel'
+          nullable: true
+          description: FR-009 single-select
+        profileCompleted:
+          type: boolean
+        completedAt:
+          type: string
+          format: date-time
+          nullable: true
+        needsReminder:
+          type: boolean
+          description: Whether to show profile completion reminder
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    ProfileUpdate:
+      type: object
+      properties:
+        softwareBackground:
+          type: array
+          items:
+            $ref: '#/components/schemas/SoftwareOption'
+        hardwareAccess:
+          type: array
+          items:
+            $ref: '#/components/schemas/HardwareOption'
+        experienceLevel:
+          $ref: '#/components/schemas/ExperienceLevel'
+
+    ProfileComplete:
+      type: object
+      required:
+        - softwareBackground
+        - hardwareAccess
+        - experienceLevel
+      properties:
+        softwareBackground:
+          type: array
+          items:
+            $ref: '#/components/schemas/SoftwareOption'
+          minItems: 1
+        hardwareAccess:
+          type: array
+          items:
+            $ref: '#/components/schemas/HardwareOption'
+          minItems: 1
+        experienceLevel:
+          $ref: '#/components/schemas/ExperienceLevel'
+
+    ProfileOptions:
+      type: object
+      properties:
+        softwareBackground:
+          type: array
+          items:
+            type: object
+            properties:
+              value:
+                $ref: '#/components/schemas/SoftwareOption'
+              label:
+                type: string
+              description:
+                type: string
+          example:
+            - value: python
+              label: Python
+              description: General-purpose programming with robotics libraries
+            - value: cpp
+              label: C++
+              description: High-performance robotics and embedded systems
+            - value: javascript_typescript
+              label: JavaScript/TypeScript
+              description: Web development and visualization
+            - value: ros_ros2
+              label: ROS/ROS2
+              description: Robot Operating System experience
+            - value: matlab
+              label: MATLAB
+              description: Mathematical modeling and simulation
+            - value: none_learning
+              label: None/Learning
+              description: New to programming
+        hardwareAccess:
+          type: array
+          items:
+            type: object
+            properties:
+              value:
+                $ref: '#/components/schemas/HardwareOption'
+              label:
+                type: string
+              description:
+                type: string
+          example:
+            - value: simulation_only
+              label: Simulation Only
+              description: Learning with virtual robots and simulators
+            - value: arduino_microcontrollers
+              label: Arduino/Microcontrollers
+              description: Basic embedded development boards
+            - value: raspberry_pi
+              label: Raspberry Pi
+              description: Single-board computer for robotics
+            - value: nvidia_jetson
+              label: NVIDIA Jetson
+              description: GPU-accelerated edge computing
+            - value: robot_arm
+              label: Physical Robot Arm
+              description: Industrial or educational manipulators
+            - value: humanoid_robot
+              label: Humanoid Robot
+              description: Full humanoid platforms
+            - value: drone_uav
+              label: Drone/UAV
+              description: Unmanned aerial vehicles
+            - value: custom_other
+              label: Custom/Other
+              description: Other robotics hardware
+        experienceLevel:
+          type: array
+          items:
+            type: object
+            properties:
+              value:
+                $ref: '#/components/schemas/ExperienceLevel'
+              label:
+                type: string
+              description:
+                type: string
+          example:
+            - value: beginner
+              label: Beginner
+              description: New to robotics - learning fundamentals
+            - value: intermediate
+              label: Intermediate
+              description: Some projects completed - building skills
+            - value: advanced
+              label: Advanced
+              description: Professional or research experience
+
+    SoftwareOption:
+      type: string
+      enum:
+        - python
+        - cpp
+        - javascript_typescript
+        - ros_ros2
+        - matlab
+        - none_learning
+
+    HardwareOption:
+      type: string
+      enum:
+        - simulation_only
+        - arduino_microcontrollers
+        - raspberry_pi
+        - nvidia_jetson
+        - robot_arm
+        - humanoid_robot
+        - drone_uav
+        - custom_other
+
+    ExperienceLevel:
+      type: string
+      enum:
+        - beginner
+        - intermediate
+        - advanced
+
+    Error:
+      type: object
+      properties:
+        detail:
+          type: string
+        code:
+          type: string
+          enum:
+            - UNAUTHORIZED
+            - NOT_FOUND
+            - VALIDATION_ERROR
+            - PROFILE_INCOMPLETE

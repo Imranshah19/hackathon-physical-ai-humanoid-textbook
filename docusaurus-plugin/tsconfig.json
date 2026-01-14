@@ -1,0 +1,27 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "CommonJS",
+    "lib": ["ES2022", "DOM"],
+    "declaration": true,
+    "declarationMap": true,
+    "sourceMap": true,
+    "outDir": "./lib",
+    "rootDir": "./src",
+    "strict": false,
+    "moduleResolution": "node",
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "forceConsistentCasingInFileNames": true,
+    "jsx": "react-jsx",
+    "resolveJsonModule": true,
+    "baseUrl": ".",
+    "paths": {
+      "@rag-chatbot/widget": ["../frontend/src"],
+      "@rag-chatbot/widget/*": ["../frontend/src/*"],
+      "@docusaurus/*": ["node_modules/@docusaurus/*"]
+    }
+  },
+  "include": ["src"],
+  "exclude": ["node_modules", "lib"]
+}

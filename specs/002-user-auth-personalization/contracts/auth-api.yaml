@@ -1,0 +1,422 @@
+openapi: 3.0.3
+info:
+  title: Authentication API (better-auth)
+  description: |
+    Authentication endpoints provided by better-auth service.
+    These routes are handled by the auth-service (Node.js + better-auth).
+  version: 1.0.0
+
+servers:
+  - url: http://localhost:3001
+    description: Local auth service
+  - url: https://auth.textbook.example.com
+    description: Production auth service
+
+tags:
+  - name: Authentication
+    description: User authentication operations
+  - name: Session
+    description: Session management
+  - name: OAuth
+    description: Social login providers
+
+paths:
+  /api/auth/sign-up/email:
+    post:
+      tags: [Authentication]
+      summary: Register new user with email/password
+      description: Creates a new user account (FR-001, FR-003, FR-004)
+      operationId: signUpEmail
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email, password, name]
+              properties:
+                email:
+                  type: string
+                  format: email
+                  example: user@example.com
+                password:
+                  type: string
+                  minLength: 8
+                  description: Min 8 chars, mixed case, number (FR-004)
+                  example: SecurePass123
+                name:
+                  type: string
+                  example: John Doe
+      responses:
+        '200':
+          description: User created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthResponse'
+        '400':
+          description: Validation error (weak password, invalid email)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '409':
+          description: Email already registered
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '429':
+          description: Rate limit exceeded (FR-018)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /api/auth/sign-in/email:
+    post:
+      tags: [Authentication]
+      summary: Sign in with email/password
+      description: Authenticate existing user (US3)
+      operationId: signInEmail
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email, password]
+              properties:
+                email:
+                  type: string
+                  format: email
+                password:
+                  type: string
+      responses:
+        '200':
+          description: Authentication successful
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthResponse'
+          headers:
+            Set-Cookie:
+              schema:
+                type: string
+              description: Session cookie (HttpOnly, Secure, SameSite=Strict)
+        '401':
+          description: Invalid credentials
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '429':
+          description: Rate limit exceeded
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /api/auth/sign-in/social:
+    get:
+      tags: [OAuth]
+      summary: Initiate social login
+      description: Redirect to OAuth provider (FR-002)
+      operationId: signInSocial
+      parameters:
+        - name: provider
+          in: query
+          required: true
+          schema:
+            type: string
+            enum: [google, github]
+        - name: callbackURL
+          in: query
+          schema:
+            type: string
+            format: uri
+      responses:
+        '302':
+          description: Redirect to OAuth provider
+
+  /api/auth/callback/{provider}:
+    get:
+      tags: [OAuth]
+      summary: OAuth callback handler
+      description: Handle OAuth provider callback
+      operationId: oauthCallback
+      parameters:
+        - name: provider
+          in: path
+          required: true
+          schema:
+            type: string
+            enum: [google, github]
+        - name: code
+          in: query
+          required: true
+          schema:
+            type: string
+        - name: state
+          in: query
+          schema:
+            type: string
+      responses:
+        '302':
+          description: Redirect to application with session
+        '400':
+          description: OAuth error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /api/auth/session:
+    get:
+      tags: [Session]
+      summary: Get current session
+      description: Returns current user and session info (US3)
+      operationId: getSession
+      security:
+        - cookieAuth: []
+      responses:
+        '200':
+          description: Active session found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SessionResponse'
+        '401':
+          description: No active session
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  session:
+                    type: 'null'
+                  user:
+                    type: 'null'
+
+  /api/auth/sign-out:
+    post:
+      tags: [Session]
+      summary: Sign out current session
+      description: Invalidate current session (US3)
+      operationId: signOut
+      security:
+        - cookieAuth: []
+      responses:
+        '200':
+          description: Signed out successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+
+  /api/auth/revoke-sessions:
+    post:
+      tags: [Session]
+      summary: Revoke all sessions
+      description: Log out from all devices (FR-006)
+      operationId: revokeSessions
+      security:
+        - cookieAuth: []
+      responses:
+        '200':
+          description: All sessions revoked
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  revokedCount:
+                    type: integer
+
+  /api/auth/forget-password:
+    post:
+      tags: [Authentication]
+      summary: Request password reset
+      description: Send password reset email (FR-020)
+      operationId: forgetPassword
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email]
+              properties:
+                email:
+                  type: string
+                  format: email
+                redirectTo:
+                  type: string
+                  format: uri
+                  description: URL to redirect after reset
+      responses:
+        '200':
+          description: Reset email sent (always returns success for security)
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+        '429':
+          description: Rate limit exceeded (3/hour per email)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /api/auth/reset-password:
+    post:
+      tags: [Authentication]
+      summary: Reset password with token
+      description: Complete password reset (FR-021 - 24h token expiry)
+      operationId: resetPassword
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [token, newPassword]
+              properties:
+                token:
+                  type: string
+                newPassword:
+                  type: string
+                  minLength: 8
+      responses:
+        '200':
+          description: Password reset successful
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+        '400':
+          description: Invalid or expired token (FR-021)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /api/auth/verify-email:
+    get:
+      tags: [Authentication]
+      summary: Verify email address
+      description: Complete email verification (FR-003)
+      operationId: verifyEmail
+      parameters:
+        - name: token
+          in: query
+          required: true
+          schema:
+            type: string
+      responses:
+        '302':
+          description: Redirect to app with verification status
+        '400':
+          description: Invalid or expired token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+components:
+  securitySchemes:
+    cookieAuth:
+      type: apiKey
+      in: cookie
+      name: better-auth.session_token
+
+  schemas:
+    AuthResponse:
+      type: object
+      properties:
+        user:
+          $ref: '#/components/schemas/User'
+        session:
+          $ref: '#/components/schemas/Session'
+
+    SessionResponse:
+      type: object
+      properties:
+        user:
+          $ref: '#/components/schemas/User'
+        session:
+          $ref: '#/components/schemas/Session'
+
+    User:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        email:
+          type: string
+          format: email
+        emailVerified:
+          type: boolean
+        name:
+          type: string
+        image:
+          type: string
+          format: uri
+          nullable: true
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    Session:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        userId:
+          type: string
+          format: uuid
+        expiresAt:
+          type: string
+          format: date-time
+        ipAddress:
+          type: string
+          nullable: true
+        userAgent:
+          type: string
+          nullable: true
+
+    Error:
+      type: object
+      properties:
+        error:
+          type: object
+          properties:
+            message:
+              type: string
+            code:
+              type: string
+              enum:
+                - INVALID_CREDENTIALS
+                - EMAIL_EXISTS
+                - WEAK_PASSWORD
+                - INVALID_EMAIL
+                - TOKEN_EXPIRED
+                - RATE_LIMITED
+                - PROVIDER_ERROR

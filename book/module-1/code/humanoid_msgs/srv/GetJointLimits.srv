@@ -1,0 +1,13 @@
+# Request joint limits for a specific joint
+# Returns position, velocity, and effort limits
+
+# Request
+string joint_name           # Name of the joint to query
+---
+# Response
+float64 min_position        # Minimum position in radians
+float64 max_position        # Maximum position in radians
+float64 max_velocity        # Maximum velocity in rad/s
+float64 max_effort          # Maximum effort (torque) in Nm
+bool success                # True if joint was found
+string message              # Status message

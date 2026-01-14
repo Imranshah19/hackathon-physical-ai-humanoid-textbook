@@ -1,0 +1,152 @@
+# RAG Chatbot - Docker Compose Configuration
+# For local development
+#
+# Usage:
+#   docker-compose up -d          # Start all services
+#   docker-compose logs -f        # View logs
+#   docker-compose down           # Stop all services
+
+version: '3.8'
+
+services:
+  # ==========================================================================
+  # Backend API Service (FastAPI)
+  # ==========================================================================
+  backend:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+    container_name: rag-chatbot-backend
+    ports:
+      - "8000:8000"
+    environment:
+      - ENVIRONMENT=development
+      - DEBUG=true
+      - LOG_LEVEL=DEBUG
+      - API_HOST=0.0.0.0
+      - API_PORT=8000
+      - API_PREFIX=/api/v1
+      - CORS_ORIGINS=["http://localhost:3000","http://localhost:5173"]
+      - AUTH_SERVICE_URL=http://auth:3001
+    env_file:
+      - ./backend/.env
+    volumes:
+      - ./backend/src:/app/src:ro
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/api/v1/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+    restart: unless-stopped
+    depends_on:
+      auth:
+        condition: service_healthy
+    networks:
+      - rag-network
+
+  # ==========================================================================
+  # Auth Service (better-auth + Hono)
+  # ==========================================================================
+  auth:
+    build:
+      context: .
+      dockerfile: auth-service/Dockerfile
+    container_name: rag-chatbot-auth
+    ports:
+      - "3001:3001"
+    environment:
+      - NODE_ENV=development
+      - PORT=3001
+      - CORS_ORIGINS=http://localhost:3000,http://localhost:5173
+    env_file:
+      - ./auth-service/.env
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3001/api/auth/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+    restart: unless-stopped
+    networks:
+      - rag-network
+
+  # ==========================================================================
+  # Frontend Development Server (optional)
+  # ==========================================================================
+  frontend:
+    image: node:20-alpine
+    container_name: rag-chatbot-frontend
+    working_dir: /app
+    ports:
+      - "5173:5173"
+    volumes:
+      - ./frontend:/app
+      - frontend_node_modules:/app/node_modules
+    command: sh -c "npm install && npm run dev -- --host 0.0.0.0"
+    environment:
+      - VITE_API_URL=http://localhost:8000/api/v1
+      - VITE_AUTH_URL=http://localhost:3001
+    depends_on:
+      - backend
+      - auth
+    networks:
+      - rag-network
+
+  # ==========================================================================
+  # Local Postgres (for development without Neon)
+  # ==========================================================================
+  postgres:
+    image: postgres:16-alpine
+    container_name: rag-chatbot-postgres
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_USER: raguser
+      POSTGRES_PASSWORD: ragpassword
+      POSTGRES_DB: ragchatbot
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U raguser -d ragchatbot"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - rag-network
+
+  # ==========================================================================
+  # Local Qdrant (for development without Qdrant Cloud)
+  # ==========================================================================
+  qdrant:
+    image: qdrant/qdrant:latest
+    container_name: rag-chatbot-qdrant
+    ports:
+      - "6333:6333"
+      - "6334:6334"
+    volumes:
+      - qdrant_data:/qdrant/storage
+    environment:
+      - QDRANT__SERVICE__GRPC_PORT=6334
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:6333/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - rag-network
+
+# =============================================================================
+# Networks
+# =============================================================================
+networks:
+  rag-network:
+    driver: bridge
+
+# =============================================================================
+# Volumes
+# =============================================================================
+volumes:
+  postgres_data:
+  qdrant_data:
+  frontend_node_modules:

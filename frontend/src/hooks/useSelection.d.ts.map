@@ -1,0 +1,1 @@
+{"version":3,"file":"useSelection.d.ts","sourceRoot":"","sources":["useSelection.ts"],"names":[],"mappings":"AAAA;;;;GAIG;AASH,UAAU,mBAAmB;IAC3B,qCAAqC;IACrC,UAAU,CAAC,EAAE,MAAM,CAAC;IACpB,mDAAmD;IACnD,SAAS,CAAC,EAAE,MAAM,CAAC;IACnB,qCAAqC;IACrC,SAAS,CAAC,EAAE,MAAM,CAAC;CACpB;AAED;;;;;GAKG;AACH,wBAAgB,YAAY,CAAC,OAAO,GAAE,mBAAwB;;;;EA6D7D;AAED,eAAe,YAAY,CAAC"}

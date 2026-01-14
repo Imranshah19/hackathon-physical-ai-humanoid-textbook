@@ -1,0 +1,112 @@
+/**
+ * Homepage styles
+ */
+
+/* =============================================================================
+   Hero Section
+   ============================================================================= */
+.heroBanner {
+  padding: 4rem 0;
+  text-align: center;
+  position: relative;
+  overflow: hidden;
+  background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%);
+}
+
+@media screen and (max-width: 996px) {
+  .heroBanner {
+    padding: 2rem;
+  }
+}
+
+.buttons {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-top: 2rem;
+}
+
+/* =============================================================================
+   Features Section
+   ============================================================================= */
+.features {
+  display: flex;
+  align-items: center;
+  padding: 4rem 0;
+  width: 100%;
+  background-color: var(--ifm-background-surface-color);
+}
+
+.featureCard {
+  display: block;
+  padding: 2rem;
+  margin-bottom: 2rem;
+  border-radius: 12px;
+  background-color: var(--ifm-background-color);
+  border: 1px solid var(--ifm-color-emphasis-200);
+  text-decoration: none;
+  color: inherit;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.featureCard:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 12px 24px rgba(0, 0, 0, 0.1);
+  text-decoration: none;
+  color: inherit;
+}
+
+.featureCard h3 {
+  margin-bottom: 0.5rem;
+  color: var(--ifm-color-primary);
+}
+
+.featureCard p {
+  margin-bottom: 0;
+  color: var(--ifm-color-content-secondary);
+}
+
+.featureIcon {
+  font-size: 3rem;
+  margin-bottom: 1rem;
+}
+
+/* =============================================================================
+   About Section
+   ============================================================================= */
+.about {
+  padding: 4rem 0;
+}
+
+.about h2 {
+  text-align: center;
+  margin-bottom: 2rem;
+}
+
+.about h3 {
+  margin-top: 2rem;
+  color: var(--ifm-color-primary);
+}
+
+.about ul {
+  margin-left: 1.5rem;
+}
+
+.about li {
+  margin-bottom: 0.5rem;
+}
+
+/* =============================================================================
+   Dark Theme Adjustments
+   ============================================================================= */
+[data-theme='dark'] .heroBanner {
+  background: linear-gradient(135deg, #0f172a 0%, #1e3a8a 100%);
+}
+
+[data-theme='dark'] .featureCard {
+  border-color: var(--ifm-color-emphasis-300);
+}
+
+[data-theme='dark'] .featureCard:hover {
+  box-shadow: 0 12px 24px rgba(0, 0, 0, 0.3);
+}

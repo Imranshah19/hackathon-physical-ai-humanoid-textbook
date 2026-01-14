@@ -33,7 +33,7 @@ By completing this module, you will be able to:
 | LO-4.7 | Apply safety constraints to VLA outputs | Constraints enforced |
 | LO-4.8 | Fine-tune VLA on custom robot data | Improved task success |
 | LO-4.9 | Evaluate VLA performance on manipulation tasks | Metrics computed |
-| LO-4.10 | Deploy VLA system for real-time operation | <2s latency achieved |
+| LO-4.10 | Deploy VLA system for real-time operation | Under 2s latency achieved |
 
 ---
 
@@ -287,9 +287,9 @@ ros2 launch humanoid_vla_ros vla_demo.launch.py
 ## Success Criteria
 
 - [ ] OpenVLA inference running successfully
-- [ ] Action tokenizer achieves < 5% reconstruction error
-- [ ] Grounding localizes objects with > 80% accuracy
-- [ ] VLA pipeline processes commands in < 2 seconds
+- [ ] Action tokenizer achieves under 5% reconstruction error
+- [ ] Grounding localizes objects with over 80% accuracy
+- [ ] VLA pipeline processes commands in under 2 seconds
 - [ ] Safety filter catches 100% of limit violations
 - [ ] ROS 2 node runs at stable 10 Hz
 - [ ] End-to-end demo completes pick-and-place task

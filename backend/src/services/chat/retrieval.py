@@ -1,5 +1,5 @@
 """
-RAG retrieval service using Qdrant vector search.
+RAG retrieval service using local embeddings and Qdrant vector search.
 
 Handles document retrieval for the chat agent using semantic search.
 """
@@ -7,7 +7,7 @@ Handles document retrieval for the chat agent using semantic search.
 import logging
 from typing import Optional
 
-from openai import AsyncOpenAI
+from sentence_transformers import SentenceTransformer
 from qdrant_client import models as qdrant_models
 
 from src.config import get_settings
@@ -15,18 +15,31 @@ from src.db.qdrant import search_vectors, get_qdrant
 
 logger = logging.getLogger(__name__)
 
+# Global embedding model (loaded once)
+_embedding_model: Optional[SentenceTransformer] = None
+
+
+def get_embedding_model() -> SentenceTransformer:
+    """Get or initialize the embedding model."""
+    global _embedding_model
+    if _embedding_model is None:
+        settings = get_settings()
+        logger.info(f"Loading embedding model: {settings.embedding_model}")
+        _embedding_model = SentenceTransformer(settings.embedding_model)
+    return _embedding_model
+
 
 class RetrievalService:
     """
     Service for retrieving relevant documentation chunks.
 
-    Uses OpenAI embeddings + Qdrant vector search for semantic retrieval.
+    Uses local sentence-transformers + Qdrant vector search for semantic retrieval.
     """
 
     def __init__(
         self,
         top_k: int = 5,
-        score_threshold: float = 0.7,
+        score_threshold: float = 0.5,
     ):
         """
         Initialize retrieval service.
@@ -36,7 +49,6 @@ class RetrievalService:
             score_threshold: Minimum similarity score.
         """
         self.settings = get_settings()
-        self.openai = AsyncOpenAI(api_key=self.settings.openai_api_key)
         self.top_k = top_k
         self.score_threshold = score_threshold
 
@@ -58,8 +70,8 @@ class RetrievalService:
             List of retrieved chunks with metadata.
         """
         try:
-            # Generate query embedding
-            query_embedding = await self._embed_query(query)
+            # Generate query embedding using local model
+            query_embedding = self._embed_query(query)
 
             # Build filter conditions
             filter_conditions = self._build_filter(module_filter, page_filter)
@@ -92,13 +104,11 @@ class RetrievalService:
             logger.error(f"Retrieval error: {e}")
             return []
 
-    async def _embed_query(self, query: str) -> list[float]:
-        """Generate embedding for a query string."""
-        response = await self.openai.embeddings.create(
-            model=self.settings.openai_embedding_model,
-            input=query,
-        )
-        return response.data[0].embedding
+    def _embed_query(self, query: str) -> list[float]:
+        """Generate embedding for a query string using local model."""
+        model = get_embedding_model()
+        embedding = model.encode(query, convert_to_numpy=True)
+        return embedding.tolist()
 
     def _build_filter(
         self,

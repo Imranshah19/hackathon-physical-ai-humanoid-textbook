@@ -15,7 +15,7 @@ from src.config import get_settings
 _client: Optional[QdrantClient] = None
 
 # Vector configuration
-VECTOR_SIZE = 1536  # text-embedding-3-small dimension
+VECTOR_SIZE = 384  # all-MiniLM-L6-v2 dimension
 DISTANCE_METRIC = qdrant_models.Distance.COSINE
 
 

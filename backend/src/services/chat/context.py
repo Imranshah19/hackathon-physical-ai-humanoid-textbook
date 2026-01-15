@@ -118,7 +118,7 @@ class ContextService:
         """
         messages: list[dict[str, str]] = []
 
-        # Retrieve relevant context using RAG
+        # Retrieve relevant context using RAG (optional - gracefully handles missing Qdrant)
         rag_context = ""
         try:
             # Extract module from page URL if available
@@ -139,7 +139,7 @@ class ContextService:
             )
         except Exception as e:
             import logging
-            logging.getLogger(__name__).warning(f"RAG retrieval failed: {e}")
+            logging.getLogger(__name__).info(f"RAG retrieval skipped (Qdrant may not be running): {e}")
 
         # System message with context
         system_content = self._build_system_prompt(selected_text, rag_context)

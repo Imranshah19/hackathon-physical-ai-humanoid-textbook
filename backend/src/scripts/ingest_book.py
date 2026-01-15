@@ -19,7 +19,7 @@ from pathlib import Path
 from typing import Optional
 from uuid import uuid4
 
-from openai import AsyncOpenAI
+from sentence_transformers import SentenceTransformer
 from qdrant_client import models as qdrant_models
 
 from src.config import get_settings
@@ -44,7 +44,8 @@ class BookIngestor:
         self.chunk_size = chunk_size
         self.chunk_overlap = chunk_overlap
         self.settings = get_settings()
-        self.openai = AsyncOpenAI(api_key=self.settings.openai_api_key)
+        logger.info(f"Loading embedding model: {self.settings.embedding_model}")
+        self.embedding_model = SentenceTransformer(self.settings.embedding_model)
         self.stats = {"files": 0, "chunks": 0, "skipped": 0}
 
     async def run(self, force: bool = False) -> dict:
@@ -321,20 +322,10 @@ class BookIngestor:
             await db.commit()
 
     async def _generate_embeddings(self, texts: list[str]) -> list[list[float]]:
-        """Generate embeddings for a list of texts."""
-        # Batch in groups of 100
-        all_embeddings = []
-        batch_size = 100
-
-        for i in range(0, len(texts), batch_size):
-            batch = texts[i : i + batch_size]
-            response = await self.openai.embeddings.create(
-                model=self.settings.openai_embedding_model,
-                input=batch,
-            )
-            all_embeddings.extend([e.embedding for e in response.data])
-
-        return all_embeddings
+        """Generate embeddings for a list of texts using local model."""
+        # Use sentence-transformers (runs locally, no API needed)
+        embeddings = self.embedding_model.encode(texts, convert_to_numpy=True)
+        return embeddings.tolist()
 
 
 async def main():

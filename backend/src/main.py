@@ -35,16 +35,18 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     settings = get_settings()
     logger.info(f"Starting application in {settings.environment} mode")
 
-    # Initialize databases
+    # Initialize databases (graceful - app can work without them for basic chat)
     try:
         await init_db()
-        logger.info("PostgreSQL connection pool initialized")
+        logger.info("Database connection initialized")
+    except Exception as e:
+        logger.warning(f"Database init failed (chat will work without persistence): {e}")
 
+    try:
         await init_qdrant()
         logger.info("Qdrant client initialized")
     except Exception as e:
-        logger.error(f"Failed to initialize databases: {e}")
-        raise
+        logger.warning(f"Qdrant init failed (chat will work without RAG): {e}")
 
     yield
 

@@ -1,14 +1,13 @@
 """
-OpenAI Agents chat service with citation extraction.
+Anthropic Claude chat service with citation extraction.
 """
 
-import json
 import logging
 import re
 import time
 from typing import AsyncGenerator, Optional
 
-from openai import AsyncOpenAI
+import anthropic
 
 from src.config import get_settings
 from src.models.conversation import Citation, StreamChunk
@@ -18,15 +17,15 @@ logger = logging.getLogger(__name__)
 
 class ChatAgent:
     """
-    Chat agent using OpenAI API with citation support.
+    Chat agent using Anthropic Claude API with citation support.
 
     Handles both synchronous and streaming responses.
     """
 
     def __init__(self) -> None:
-        """Initialize chat agent with OpenAI client."""
+        """Initialize chat agent with Anthropic client."""
         self.settings = get_settings()
-        self.client = AsyncOpenAI(api_key=self.settings.openai_api_key)
+        self.client = anthropic.AsyncAnthropic(api_key=self.settings.anthropic_api_key)
 
     async def generate_response(
         self,
@@ -46,16 +45,29 @@ class ChatAgent:
         start_time = time.time()
 
         try:
-            response = await self.client.chat.completions.create(
-                model=self.settings.openai_model,
-                messages=messages,
-                max_tokens=self.settings.openai_max_tokens,
-                temperature=0.7,
+            # Extract system message and convert to Claude format
+            system_message = ""
+            claude_messages = []
+
+            for msg in messages:
+                if msg["role"] == "system":
+                    system_message = msg["content"]
+                else:
+                    claude_messages.append({
+                        "role": msg["role"],
+                        "content": msg["content"]
+                    })
+
+            response = await self.client.messages.create(
+                model=self.settings.anthropic_model,
+                max_tokens=self.settings.anthropic_max_tokens,
+                system=system_message,
+                messages=claude_messages,
             )
 
             latency_ms = int((time.time() - start_time) * 1000)
-            content = response.choices[0].message.content or ""
-            tokens_used = response.usage.total_tokens if response.usage else 0
+            content = response.content[0].text if response.content else ""
+            tokens_used = (response.usage.input_tokens + response.usage.output_tokens) if response.usage else 0
 
             # Extract citations from response
             citations = self._extract_citations(content, selected_text)
@@ -63,7 +75,7 @@ class ChatAgent:
             return content, citations, tokens_used, latency_ms
 
         except Exception as e:
-            logger.error(f"OpenAI API error: {e}")
+            logger.error(f"Anthropic API error: {e}")
             raise
 
     async def generate_stream(
@@ -84,19 +96,28 @@ class ChatAgent:
         full_content = ""
 
         try:
-            stream = await self.client.chat.completions.create(
-                model=self.settings.openai_model,
-                messages=messages,
-                max_tokens=self.settings.openai_max_tokens,
-                temperature=0.7,
-                stream=True,
-            )
+            # Extract system message and convert to Claude format
+            system_message = ""
+            claude_messages = []
 
-            async for chunk in stream:
-                if chunk.choices and chunk.choices[0].delta.content:
-                    content = chunk.choices[0].delta.content
-                    full_content += content
-                    yield StreamChunk(type="content", content=content)
+            for msg in messages:
+                if msg["role"] == "system":
+                    system_message = msg["content"]
+                else:
+                    claude_messages.append({
+                        "role": msg["role"],
+                        "content": msg["content"]
+                    })
+
+            async with self.client.messages.stream(
+                model=self.settings.anthropic_model,
+                max_tokens=self.settings.anthropic_max_tokens,
+                system=system_message,
+                messages=claude_messages,
+            ) as stream:
+                async for text in stream.text_stream:
+                    full_content += text
+                    yield StreamChunk(type="content", content=text)
 
             # Extract and yield citations after full response
             citations = self._extract_citations(full_content, selected_text)
@@ -106,7 +127,7 @@ class ChatAgent:
             yield StreamChunk(type="done")
 
         except Exception as e:
-            logger.error(f"OpenAI streaming error: {e}")
+            logger.error(f"Anthropic streaming error: {e}")
             yield StreamChunk(type="error", error=str(e))
 
     def _extract_citations(

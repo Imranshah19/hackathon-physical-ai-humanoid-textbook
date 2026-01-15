@@ -39,11 +39,13 @@ class Settings(BaseSettings):
     qdrant_api_key: str
     qdrant_collection: str = "documentation"
 
-    # OpenAI
-    openai_api_key: str
-    openai_model: str = "gpt-4o-mini"
-    openai_embedding_model: str = "text-embedding-3-small"
-    openai_max_tokens: int = 1024
+    # Anthropic Claude
+    anthropic_api_key: str
+    anthropic_model: str = "claude-sonnet-4-20250514"
+    anthropic_max_tokens: int = 1024
+
+    # Embeddings (local sentence-transformers)
+    embedding_model: str = "all-MiniLM-L6-v2"
 
     # Rate Limiting
     rate_limit_requests: int = 30

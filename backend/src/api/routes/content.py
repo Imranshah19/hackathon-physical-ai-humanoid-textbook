@@ -12,7 +12,7 @@ from pydantic import BaseModel
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.api.middleware.auth import get_current_user, get_optional_user
-from src.database import get_db
+from src.db.postgres import get_db_session
 from src.services.profile import ProfileService
 from src.services.personalization import (
     PersonalizationService,
@@ -219,7 +219,7 @@ async def get_chapter_content(
     chapter_id: str,
     variant: Optional[str] = Query(None, description="Override content variant"),
     user: Optional[dict] = Depends(get_optional_user),
-    db: AsyncSession = Depends(get_db),
+    db: AsyncSession = Depends(get_db_session),
 ):
     """Get personalized chapter content (T040).
 
@@ -271,7 +271,7 @@ async def get_code_example(
     example_id: str,
     language: Optional[str] = Query(None, description="Override language"),
     user: Optional[dict] = Depends(get_optional_user),
-    db: AsyncSession = Depends(get_db),
+    db: AsyncSession = Depends(get_db_session),
 ):
     """Get code example with preferred language (T041).
 
@@ -313,7 +313,7 @@ async def get_code_example(
 async def get_exercise(
     exercise_id: str,
     user: Optional[dict] = Depends(get_optional_user),
-    db: AsyncSession = Depends(get_db),
+    db: AsyncSession = Depends(get_db_session),
 ):
     """Get exercise with hardware variant (T042).
 
@@ -352,7 +352,7 @@ async def get_exercise(
 @router.get("/preferences", response_model=PreferencesResponse)
 async def get_preferences(
     user: dict = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db),
+    db: AsyncSession = Depends(get_db_session),
 ):
     """Get user's content preferences (T048).
 
@@ -374,7 +374,7 @@ async def get_preferences(
 async def update_preferences(
     request: PreferencesUpdateRequest,
     user: dict = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db),
+    db: AsyncSession = Depends(get_db_session),
 ):
     """Update user's content preferences (T049).
 
@@ -408,7 +408,7 @@ async def update_preferences(
 @router.get("/settings", response_model=PersonalizationSettingsResponse)
 async def get_personalization_settings(
     user: Optional[dict] = Depends(get_optional_user),
-    db: AsyncSession = Depends(get_db),
+    db: AsyncSession = Depends(get_db_session),
 ):
     """Get full personalization settings.
 

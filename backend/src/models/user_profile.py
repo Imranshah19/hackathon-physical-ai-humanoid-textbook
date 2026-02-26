@@ -3,7 +3,7 @@
 Source: FR-007, FR-008, FR-009, FR-010, FR-011, FR-012
 """
 
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Optional
 from uuid import UUID, uuid4
 
@@ -107,7 +107,7 @@ class UserProfile(Base):
         """Mark profile as completed with timestamp."""
         if self.is_complete():
             self.profile_completed = True
-            self.completed_at = datetime.now()
+            self.completed_at = datetime.now(timezone.utc)
 
     def __repr__(self) -> str:
         return (

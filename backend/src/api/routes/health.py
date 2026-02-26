@@ -2,11 +2,12 @@
 Health check endpoint for service monitoring.
 """
 
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Literal
 
 from fastapi import APIRouter
 from pydantic import BaseModel
+from sqlalchemy import text
 
 from src.db.postgres import get_db
 from src.db.qdrant import get_qdrant
@@ -37,7 +38,7 @@ async def health_check() -> HealthStatus:
     # Check PostgreSQL
     try:
         async with get_db() as session:
-            await session.execute("SELECT 1")
+            await session.execute(text("SELECT 1"))
         checks["postgres"] = {"status": "healthy", "connected": True}
     except Exception as e:
         checks["postgres"] = {"status": "unhealthy", "connected": False, "error": str(e)}
@@ -58,7 +59,7 @@ async def health_check() -> HealthStatus:
 
     return HealthStatus(
         status="healthy" if overall_healthy else "degraded",
-        timestamp=datetime.utcnow(),
+        timestamp=datetime.now(timezone.utc),
         checks=checks,
     )
 

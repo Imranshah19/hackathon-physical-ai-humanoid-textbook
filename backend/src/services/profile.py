@@ -3,7 +3,7 @@
 Source: FR-007, FR-008, FR-009, FR-010, FR-011, FR-012
 """
 
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from typing import Optional
 from uuid import UUID
 
@@ -120,7 +120,7 @@ class ProfileService:
         profile.hardware_access = hardware_access
         profile.experience_level = experience_level
         profile.profile_completed = True
-        profile.completed_at = datetime.utcnow()
+        profile.completed_at = datetime.now(timezone.utc)
 
         await self.db.commit()
         await self.db.refresh(profile)
@@ -171,7 +171,7 @@ class ProfileService:
         # Check if profile is now complete
         if profile.is_complete() and not profile.profile_completed:
             profile.profile_completed = True
-            profile.completed_at = datetime.utcnow()
+            profile.completed_at = datetime.now(timezone.utc)
 
         await self.db.commit()
         await self.db.refresh(profile)
@@ -187,7 +187,7 @@ class ProfileService:
             Updated UserProfile
         """
         profile = await self.get_or_create_profile(user_id)
-        profile.last_reminded_at = datetime.utcnow()
+        profile.last_reminded_at = datetime.now(timezone.utc)
         await self.db.commit()
         await self.db.refresh(profile)
         return profile
@@ -204,7 +204,7 @@ class ProfileService:
             return True
 
         # Remind once per day
-        return datetime.utcnow() - profile.last_reminded_at > timedelta(days=1)
+        return datetime.now(timezone.utc) - profile.last_reminded_at > timedelta(days=1)
 
     def get_next_reminder_time(self, profile: UserProfile) -> Optional[datetime]:
         """Get next reminder time if applicable."""
@@ -212,7 +212,7 @@ class ProfileService:
             return None
 
         if not profile.last_reminded_at:
-            return datetime.utcnow()
+            return datetime.now(timezone.utc)
 
         return profile.last_reminded_at + timedelta(days=1)
 

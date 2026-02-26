@@ -79,7 +79,7 @@ async function apiRequest<T>(
   });
 
   if (!response.ok) {
-    const error = await response.json().catch(() => ({ error: 'Unknown error' }));
+    const error = await response.json().catch(() => ({}));
     throw new Error(error.detail || error.error || 'API request failed');
   }
 
@@ -116,10 +116,10 @@ export async function* streamMessage(
     throw new Error('Stream request failed');
   }
 
-  const reader = response.body?.getReader();
-  if (!reader) {
+  if (!response.body) {
     throw new Error('No response body');
   }
+  const reader = response.body.getReader();
 
   const decoder = new TextDecoder();
   let buffer = '';

@@ -1,0 +1,28 @@
+# Control parameters for humanoid robot
+# Load with: ros2 launch humanoid_bringup control.launch.py
+
+joint_publisher:
+  ros__parameters:
+    joint_name: "head_pan"
+    publish_rate: 50.0
+    amplitude: 0.5
+    frequency: 0.5
+
+joint_limits_server:
+  ros__parameters:
+    # Joint limits are hardcoded in the node for this example
+    # In production, load from URDF or config file
+    default_max_velocity: 2.0
+    default_max_effort: 50.0
+
+move_action_server:
+  ros__parameters:
+    control_rate: 50.0
+    position_tolerance: 0.001
+
+lifecycle_joint_controller:
+  ros__parameters:
+    joint_name: "head_pan"
+    control_rate: 50.0
+    amplitude: 0.5
+    frequency: 0.5

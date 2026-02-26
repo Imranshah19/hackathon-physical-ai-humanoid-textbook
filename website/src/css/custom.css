@@ -1,0 +1,304 @@
+/**
+ * Physical AI & Humanoid Robotics Textbook - Custom Styles
+ *
+ * Theme colors and customizations for Docusaurus.
+ */
+
+/* =============================================================================
+   CSS Variables - Light Theme
+   ============================================================================= */
+:root {
+  /* Primary colors - Blue accent */
+  --ifm-color-primary: #2563eb;
+  --ifm-color-primary-dark: #1d4ed8;
+  --ifm-color-primary-darker: #1e40af;
+  --ifm-color-primary-darkest: #1e3a8a;
+  --ifm-color-primary-light: #3b82f6;
+  --ifm-color-primary-lighter: #60a5fa;
+  --ifm-color-primary-lightest: #93c5fd;
+
+  /* Code block styling */
+  --ifm-code-font-size: 95%;
+  --docusaurus-highlighted-code-line-bg: rgba(0, 0, 0, 0.1);
+
+  /* Fonts */
+  --ifm-font-family-base: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI',
+    Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+  --ifm-font-family-monospace: 'JetBrains Mono', 'Fira Code', Consolas, Monaco,
+    'Andale Mono', 'Ubuntu Mono', monospace;
+
+  /* Spacing */
+  --ifm-spacing-horizontal: 1.5rem;
+
+  /* Sidebar */
+  --doc-sidebar-width: 280px;
+
+  /* Footer */
+  --ifm-footer-background-color: #1e293b;
+}
+
+/* =============================================================================
+   CSS Variables - Dark Theme
+   ============================================================================= */
+[data-theme='dark'] {
+  --ifm-color-primary: #60a5fa;
+  --ifm-color-primary-dark: #3b82f6;
+  --ifm-color-primary-darker: #2563eb;
+  --ifm-color-primary-darkest: #1d4ed8;
+  --ifm-color-primary-light: #93c5fd;
+  --ifm-color-primary-lighter: #bfdbfe;
+  --ifm-color-primary-lightest: #dbeafe;
+
+  --docusaurus-highlighted-code-line-bg: rgba(255, 255, 255, 0.1);
+
+  /* Dark mode backgrounds */
+  --ifm-background-color: #0f172a;
+  --ifm-background-surface-color: #1e293b;
+}
+
+/* =============================================================================
+   Typography
+   ============================================================================= */
+h1 {
+  font-weight: 700;
+}
+
+h2 {
+  font-weight: 600;
+  border-bottom: 1px solid var(--ifm-color-emphasis-300);
+  padding-bottom: 0.5rem;
+}
+
+/* =============================================================================
+   Code Blocks
+   ============================================================================= */
+.prism-code {
+  font-size: 0.9rem;
+  line-height: 1.6;
+}
+
+/* Code block titles */
+div[class*='codeBlockTitle'] {
+  font-family: var(--ifm-font-family-monospace);
+  font-size: 0.85rem;
+  font-weight: 600;
+  background-color: var(--ifm-color-emphasis-200);
+  padding: 0.5rem 1rem;
+  border-radius: var(--ifm-code-border-radius) var(--ifm-code-border-radius) 0 0;
+}
+
+/* Inline code */
+code {
+  padding: 0.1rem 0.3rem;
+  border-radius: 4px;
+  background-color: var(--ifm-color-emphasis-200);
+}
+
+/* =============================================================================
+   Sidebar
+   ============================================================================= */
+.menu__link {
+  font-size: 0.9rem;
+}
+
+.menu__link--sublist {
+  font-weight: 600;
+}
+
+/* Module category headers */
+.menu__list-item--collapsed .menu__link--sublist-caret::after {
+  background-size: 1.5rem 1.5rem;
+}
+
+/* =============================================================================
+   Admonitions (Note, Warning, Tip, etc.)
+   ============================================================================= */
+.admonition {
+  margin-bottom: 1.5rem;
+  border-radius: 8px;
+}
+
+.admonition-heading h5 {
+  font-size: 1rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+/* =============================================================================
+   Tables
+   ============================================================================= */
+table {
+  display: table;
+  width: 100%;
+  margin-bottom: 1.5rem;
+}
+
+table thead {
+  background-color: var(--ifm-color-emphasis-100);
+}
+
+table th {
+  font-weight: 600;
+  text-align: left;
+}
+
+table td,
+table th {
+  padding: 0.75rem 1rem;
+  border: 1px solid var(--ifm-color-emphasis-300);
+}
+
+/* =============================================================================
+   Images
+   ============================================================================= */
+img {
+  border-radius: 8px;
+}
+
+/* Diagram images */
+.diagram {
+  background-color: white;
+  padding: 1rem;
+  border-radius: 8px;
+  margin: 1.5rem 0;
+}
+
+[data-theme='dark'] .diagram {
+  background-color: #1e293b;
+}
+
+/* =============================================================================
+   Exercise Components
+   ============================================================================= */
+.exercise-box {
+  background-color: var(--ifm-color-primary-lightest);
+  border-left: 4px solid var(--ifm-color-primary);
+  padding: 1rem 1.5rem;
+  margin: 1.5rem 0;
+  border-radius: 0 8px 8px 0;
+}
+
+[data-theme='dark'] .exercise-box {
+  background-color: rgba(59, 130, 246, 0.1);
+}
+
+.exercise-box h4 {
+  color: var(--ifm-color-primary-dark);
+  margin-bottom: 0.5rem;
+}
+
+/* =============================================================================
+   Code Example Tabs
+   ============================================================================= */
+.tabs-container {
+  margin: 1.5rem 0;
+}
+
+.tabs__item {
+  font-family: var(--ifm-font-family-monospace);
+  font-size: 0.85rem;
+}
+
+/* =============================================================================
+   Navbar
+   ============================================================================= */
+.navbar {
+  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1);
+}
+
+.navbar__title {
+  font-weight: 700;
+}
+
+/* =============================================================================
+   Footer
+   ============================================================================= */
+.footer {
+  padding: 3rem 0;
+}
+
+.footer__title {
+  font-size: 1rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.footer__link-item {
+  font-size: 0.9rem;
+}
+
+/* =============================================================================
+   Announcement Bar
+   ============================================================================= */
+div[class*='announcementBar'] {
+  font-size: 0.9rem;
+}
+
+/* =============================================================================
+   Table of Contents
+   ============================================================================= */
+.table-of-contents {
+  font-size: 0.85rem;
+}
+
+.table-of-contents__link--active {
+  font-weight: 600;
+}
+
+/* =============================================================================
+   Search (if Algolia is enabled)
+   ============================================================================= */
+.DocSearch-Button {
+  border-radius: 8px !important;
+}
+
+/* =============================================================================
+   Responsive Adjustments
+   ============================================================================= */
+@media (max-width: 996px) {
+  :root {
+    --doc-sidebar-width: 100%;
+  }
+
+  .menu__link {
+    font-size: 1rem;
+    padding: 0.75rem 1rem;
+  }
+}
+
+/* =============================================================================
+   Print Styles
+   ============================================================================= */
+@media print {
+  .navbar,
+  .footer,
+  .table-of-contents,
+  .pagination-nav,
+  div[class*='announcementBar'] {
+    display: none !important;
+  }
+
+  .main-wrapper {
+    padding: 0 !important;
+  }
+
+  .markdown {
+    max-width: 100% !important;
+  }
+
+  code {
+    border: 1px solid #ccc;
+  }
+}
+
+/* =============================================================================
+   RAG Chatbot Widget Integration
+   ============================================================================= */
+/* Ensure chatbot doesn't overlap with footer navigation */
+.pagination-nav {
+  margin-bottom: 5rem;
+}
+
+/* Note: Widget styles loaded by plugin when enabled */
+/* @import '../../../frontend/src/styles/widget.css'; */

@@ -1,0 +1,381 @@
+openapi: 3.0.3
+info:
+  title: Content Personalization API
+  description: |
+    Endpoints for delivering personalized chapter content based on user profile.
+    Integrated with the existing RAG chatbot backend.
+  version: 1.0.0
+
+servers:
+  - url: http://localhost:8000
+    description: Local FastAPI backend
+  - url: https://api.textbook.example.com
+    description: Production API
+
+tags:
+  - name: Content
+    description: Personalized content delivery
+  - name: Preferences
+    description: Content preference overrides
+
+paths:
+  /api/content/chapter/{chapterId}:
+    get:
+      tags: [Content]
+      summary: Get personalized chapter content
+      description: |
+        Retrieve chapter content personalized to user profile (US2).
+        - Beginner users get expanded explanations (FR-013)
+        - Code examples match preferred language (FR-014)
+        - Hardware instructions match user's platforms (FR-015, FR-016)
+      operationId: getChapterContent
+      security:
+        - bearerAuth: []
+        - {}  # Also works for anonymous users with defaults
+      parameters:
+        - name: chapterId
+          in: path
+          required: true
+          schema:
+            type: string
+          example: "01-introduction"
+        - name: X-Content-Variant
+          in: header
+          description: Override automatic personalization (FR-017)
+          schema:
+            type: string
+            enum: [auto, beginner, intermediate, advanced]
+          example: auto
+        - name: X-Code-Language
+          in: header
+          description: Override code example language (FR-017)
+          schema:
+            type: string
+            enum: [python, cpp, ros2]
+          example: auto
+      responses:
+        '200':
+          description: Personalized chapter content
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ChapterContent'
+        '404':
+          description: Chapter not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /api/content/code-example/{exampleId}:
+    get:
+      tags: [Content]
+      summary: Get code example in preferred language
+      description: |
+        Retrieve code example with language based on profile (FR-014).
+        Python shown by default for beginners.
+        C++/ROS2 for advanced users with that background.
+      operationId: getCodeExample
+      security:
+        - bearerAuth: []
+        - {}
+      parameters:
+        - name: exampleId
+          in: path
+          required: true
+          schema:
+            type: string
+          example: "kinematics-forward-01"
+        - name: language
+          in: query
+          description: Override language selection (FR-017)
+          schema:
+            type: string
+            enum: [python, cpp, ros2, matlab]
+      responses:
+        '200':
+          description: Code example content
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CodeExample'
+        '404':
+          description: Example not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /api/content/exercise/{exerciseId}:
+    get:
+      tags: [Content]
+      summary: Get personalized exercise
+      description: |
+        Retrieve exercise with hardware-specific instructions (FR-015, FR-016).
+        - Users with physical hardware get real robot instructions
+        - Users without hardware get simulation alternatives
+      operationId: getExercise
+      security:
+        - bearerAuth: []
+        - {}
+      parameters:
+        - name: exerciseId
+          in: path
+          required: true
+          schema:
+            type: string
+          example: "arm-control-01"
+        - name: hardware
+          in: query
+          description: Override hardware variant selection
+          schema:
+            type: string
+            enum: [simulation, arduino, raspberry_pi, jetson, robot_arm, humanoid]
+      responses:
+        '200':
+          description: Exercise content
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Exercise'
+        '404':
+          description: Exercise not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /api/preferences:
+    get:
+      tags: [Preferences]
+      summary: Get content preferences
+      description: Get user's current content display preferences
+      operationId: getPreferences
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Current preferences
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Preferences'
+        '401':
+          description: Not authenticated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+    patch:
+      tags: [Preferences]
+      summary: Update content preferences
+      description: Override automatic personalization (FR-017)
+      operationId: updatePreferences
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PreferencesUpdate'
+      responses:
+        '200':
+          description: Preferences updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Preferences'
+        '401':
+          description: Not authenticated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  schemas:
+    ChapterContent:
+      type: object
+      properties:
+        id:
+          type: string
+        title:
+          type: string
+        variant:
+          type: string
+          enum: [beginner, intermediate, advanced]
+          description: Content variant served
+        sections:
+          type: array
+          items:
+            $ref: '#/components/schemas/Section'
+        codeLanguage:
+          type: string
+          description: Primary code language for examples
+        hardwareVariant:
+          type: string
+          description: Hardware variant for exercises
+        personalization:
+          $ref: '#/components/schemas/PersonalizationInfo'
+
+    Section:
+      type: object
+      properties:
+        id:
+          type: string
+        title:
+          type: string
+        content:
+          type: string
+          description: Markdown content
+        difficultyLevel:
+          type: string
+          enum: [beginner, intermediate, advanced]
+        codeExamples:
+          type: array
+          items:
+            type: string
+          description: IDs of related code examples
+        exercises:
+          type: array
+          items:
+            type: string
+          description: IDs of related exercises
+
+    CodeExample:
+      type: object
+      properties:
+        id:
+          type: string
+        title:
+          type: string
+        language:
+          type: string
+          enum: [python, cpp, ros2, matlab]
+        code:
+          type: string
+          description: Code content
+        explanation:
+          type: string
+          description: Markdown explanation
+        expectedOutput:
+          type: string
+          nullable: true
+        availableLanguages:
+          type: array
+          items:
+            type: string
+          description: Other available language variants
+
+    Exercise:
+      type: object
+      properties:
+        id:
+          type: string
+        title:
+          type: string
+        description:
+          type: string
+        hardwareVariant:
+          type: string
+          enum: [simulation, arduino, raspberry_pi, jetson, robot_arm, humanoid]
+        instructions:
+          type: array
+          items:
+            type: object
+            properties:
+              step:
+                type: integer
+              content:
+                type: string
+              code:
+                type: string
+                nullable: true
+        simulationAlternative:
+          type: boolean
+          description: Whether this is a simulation alternative
+        availableVariants:
+          type: array
+          items:
+            type: string
+          description: Other hardware variants available
+
+    Preferences:
+      type: object
+      properties:
+        contentVariant:
+          type: string
+          enum: [auto, beginner, intermediate, advanced]
+          description: auto uses profile-based selection
+        codeLanguage:
+          type: string
+          enum: [auto, python, cpp, ros2, matlab]
+          description: auto uses profile-based selection
+        hardwareVariant:
+          type: string
+          enum: [auto, simulation, arduino, raspberry_pi, jetson, robot_arm, humanoid]
+          description: auto uses profile-based selection
+        showAlternatives:
+          type: boolean
+          description: Show links to other variants
+
+    PreferencesUpdate:
+      type: object
+      properties:
+        contentVariant:
+          type: string
+          enum: [auto, beginner, intermediate, advanced]
+        codeLanguage:
+          type: string
+          enum: [auto, python, cpp, ros2, matlab]
+        hardwareVariant:
+          type: string
+          enum: [auto, simulation, arduino, raspberry_pi, jetson, robot_arm, humanoid]
+        showAlternatives:
+          type: boolean
+
+    PersonalizationInfo:
+      type: object
+      description: Debug info about personalization decisions
+      properties:
+        profileBased:
+          type: boolean
+          description: Whether personalization used profile data
+        overrides:
+          type: object
+          properties:
+            contentVariant:
+              type: boolean
+            codeLanguage:
+              type: boolean
+            hardwareVariant:
+              type: boolean
+        defaults:
+          type: object
+          properties:
+            contentVariant:
+              type: string
+            codeLanguage:
+              type: string
+            hardwareVariant:
+              type: string
+
+    Error:
+      type: object
+      properties:
+        detail:
+          type: string
+        code:
+          type: string
+          enum:
+            - NOT_FOUND
+            - INVALID_VARIANT
+            - CONTENT_UNAVAILABLE

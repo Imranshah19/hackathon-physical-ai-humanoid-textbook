@@ -1,0 +1,32 @@
+{
+  "name": "@textbook/auth-service",
+  "version": "0.1.0",
+  "description": "Authentication service using better-auth for Physical AI Textbook",
+  "type": "module",
+  "main": "dist/index.js",
+  "scripts": {
+    "dev": "tsx watch src/index.ts",
+    "build": "tsc",
+    "start": "node dist/index.js",
+    "db:generate": "npx @better-auth/cli generate",
+    "db:migrate": "npx @better-auth/cli migrate",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "better-auth": "^1.0.0",
+    "pg": "^8.11.0",
+    "hono": "^4.0.0",
+    "@hono/node-server": "^1.8.0",
+    "dotenv": "^16.4.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.11.0",
+    "@types/pg": "^8.11.0",
+    "typescript": "^5.3.0",
+    "tsx": "^4.7.0"
+  },
+  "engines": {
+    "node": ">=20.0.0"
+  },
+  "license": "MIT"
+}

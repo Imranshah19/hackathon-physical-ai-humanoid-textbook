@@ -1,0 +1,511 @@
+openapi: 3.1.0
+info:
+  title: RAG Documentation Chatbot API
+  description: API for the RAG-powered documentation chatbot
+  version: 1.0.0
+  contact:
+    name: API Support
+
+servers:
+  - url: https://api.example.com/v1
+    description: Production
+  - url: http://localhost:8000/v1
+    description: Development
+
+tags:
+  - name: Chat
+    description: Chat and conversation endpoints
+  - name: History
+    description: Conversation history management
+  - name: Index
+    description: Documentation indexing (internal)
+  - name: Health
+    description: Health and status checks
+
+paths:
+  /chat:
+    post:
+      tags: [Chat]
+      summary: Send a chat message
+      description: Send a message and receive an AI response grounded in documentation
+      operationId: sendMessage
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ChatRequest'
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ChatResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '429':
+          $ref: '#/components/responses/RateLimited'
+
+  /chat/stream:
+    post:
+      tags: [Chat]
+      summary: Stream a chat response
+      description: Send a message and receive a streaming AI response via SSE
+      operationId: streamMessage
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ChatRequest'
+      responses:
+        '200':
+          description: Server-Sent Events stream
+          content:
+            text/event-stream:
+              schema:
+                type: string
+                description: SSE stream of ChatStreamChunk events
+
+  /conversations:
+    get:
+      tags: [History]
+      summary: List conversations
+      description: Get all conversations for the current session
+      operationId: listConversations
+      parameters:
+        - $ref: '#/components/parameters/SessionToken'
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 20
+            maximum: 100
+        - name: offset
+          in: query
+          schema:
+            type: integer
+            default: 0
+      responses:
+        '200':
+          description: List of conversations
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ConversationList'
+
+  /conversations/{conversationId}:
+    get:
+      tags: [History]
+      summary: Get conversation
+      description: Get a specific conversation with all messages
+      operationId: getConversation
+      parameters:
+        - $ref: '#/components/parameters/SessionToken'
+        - $ref: '#/components/parameters/ConversationId'
+      responses:
+        '200':
+          description: Conversation with messages
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ConversationDetail'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+    delete:
+      tags: [History]
+      summary: Delete conversation
+      description: Delete a conversation and all its messages
+      operationId: deleteConversation
+      parameters:
+        - $ref: '#/components/parameters/SessionToken'
+        - $ref: '#/components/parameters/ConversationId'
+      responses:
+        '204':
+          description: Conversation deleted
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /conversations/{conversationId}/export:
+    get:
+      tags: [History]
+      summary: Export conversation
+      description: Export conversation as markdown
+      operationId: exportConversation
+      parameters:
+        - $ref: '#/components/parameters/SessionToken'
+        - $ref: '#/components/parameters/ConversationId'
+      responses:
+        '200':
+          description: Markdown export
+          content:
+            text/markdown:
+              schema:
+                type: string
+
+  /messages/{messageId}/feedback:
+    post:
+      tags: [Chat]
+      summary: Submit feedback
+      description: Submit thumbs up/down feedback for a message
+      operationId: submitFeedback
+      parameters:
+        - $ref: '#/components/parameters/SessionToken'
+        - name: messageId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/FeedbackRequest'
+      responses:
+        '200':
+          description: Feedback recorded
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /index/webhook:
+    post:
+      tags: [Index]
+      summary: Trigger reindex
+      description: Webhook to trigger documentation reindexing
+      operationId: triggerReindex
+      security:
+        - ApiKeyAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/IndexWebhook'
+      responses:
+        '202':
+          description: Reindex job queued
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/IndexJob'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /health:
+    get:
+      tags: [Health]
+      summary: Health check
+      description: Check API health status
+      operationId: healthCheck
+      responses:
+        '200':
+          description: Healthy
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HealthStatus'
+
+  /health/ready:
+    get:
+      tags: [Health]
+      summary: Readiness check
+      description: Check if API is ready to serve requests
+      operationId: readinessCheck
+      responses:
+        '200':
+          description: Ready
+        '503':
+          description: Not ready
+
+components:
+  parameters:
+    SessionToken:
+      name: X-Session-Token
+      in: header
+      required: true
+      schema:
+        type: string
+        minLength: 64
+        maxLength: 64
+      description: Session token from cookie
+
+    ConversationId:
+      name: conversationId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+      description: Conversation UUID
+
+  schemas:
+    ChatRequest:
+      type: object
+      required:
+        - message
+      properties:
+        message:
+          type: string
+          minLength: 1
+          maxLength: 2000
+          description: User's question
+        conversation_id:
+          type: string
+          format: uuid
+          description: Existing conversation ID (omit for new)
+        selected_text:
+          type: string
+          maxLength: 5000
+          description: User-selected documentation text
+        page_url:
+          type: string
+          maxLength: 512
+          description: Current documentation page URL
+        page_title:
+          type: string
+          maxLength: 256
+          description: Current page title
+
+    ChatResponse:
+      type: object
+      properties:
+        message_id:
+          type: string
+          format: uuid
+        conversation_id:
+          type: string
+          format: uuid
+        content:
+          type: string
+          description: AI response text
+        citations:
+          type: array
+          items:
+            $ref: '#/components/schemas/Citation'
+        confidence:
+          type: number
+          format: float
+          minimum: 0
+          maximum: 1
+
+    ChatStreamChunk:
+      type: object
+      properties:
+        type:
+          type: string
+          enum: [token, citation, done, error]
+        content:
+          type: string
+        citation:
+          $ref: '#/components/schemas/Citation'
+        message_id:
+          type: string
+          format: uuid
+        conversation_id:
+          type: string
+          format: uuid
+
+    Citation:
+      type: object
+      properties:
+        text:
+          type: string
+          description: Quoted passage
+        source_url:
+          type: string
+          description: Documentation page URL
+        section_title:
+          type: string
+          description: Section heading
+        relevance:
+          type: number
+          format: float
+          minimum: 0
+          maximum: 1
+
+    ConversationList:
+      type: object
+      properties:
+        conversations:
+          type: array
+          items:
+            $ref: '#/components/schemas/ConversationSummary'
+        total:
+          type: integer
+        has_more:
+          type: boolean
+
+    ConversationSummary:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        page_url:
+          type: string
+        page_title:
+          type: string
+        message_count:
+          type: integer
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+
+    ConversationDetail:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        page_url:
+          type: string
+        page_title:
+          type: string
+        selected_text:
+          type: string
+        messages:
+          type: array
+          items:
+            $ref: '#/components/schemas/Message'
+        created_at:
+          type: string
+          format: date-time
+
+    Message:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        role:
+          type: string
+          enum: [user, assistant]
+        content:
+          type: string
+        citations:
+          type: array
+          items:
+            $ref: '#/components/schemas/Citation'
+        feedback:
+          type: string
+          enum: [up, down]
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+
+    FeedbackRequest:
+      type: object
+      required:
+        - feedback
+      properties:
+        feedback:
+          type: string
+          enum: [up, down]
+
+    IndexWebhook:
+      type: object
+      properties:
+        urls:
+          type: array
+          items:
+            type: string
+          description: Specific URLs to reindex (empty = full reindex)
+        force:
+          type: boolean
+          default: false
+          description: Force reindex even if content unchanged
+
+    IndexJob:
+      type: object
+      properties:
+        job_id:
+          type: string
+          format: uuid
+        status:
+          type: string
+          enum: [queued, processing, completed, failed]
+        urls_count:
+          type: integer
+        created_at:
+          type: string
+          format: date-time
+
+    HealthStatus:
+      type: object
+      properties:
+        status:
+          type: string
+          enum: [healthy, degraded, unhealthy]
+        version:
+          type: string
+        checks:
+          type: object
+          properties:
+            database:
+              type: string
+              enum: [ok, error]
+            vector_db:
+              type: string
+              enum: [ok, error]
+            openai:
+              type: string
+              enum: [ok, error]
+
+    Error:
+      type: object
+      properties:
+        error:
+          type: string
+        message:
+          type: string
+        details:
+          type: object
+
+  responses:
+    BadRequest:
+      description: Invalid request
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+
+    Unauthorized:
+      description: Authentication required
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+
+    NotFound:
+      description: Resource not found
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+
+    RateLimited:
+      description: Rate limit exceeded
+      headers:
+        Retry-After:
+          schema:
+            type: integer
+          description: Seconds until rate limit resets
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+
+  securitySchemes:
+    ApiKeyAuth:
+      type: apiKey
+      in: header
+      name: X-API-Key
+      description: API key for internal endpoints

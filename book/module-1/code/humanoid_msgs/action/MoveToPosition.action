@@ -1,0 +1,18 @@
+# Move a joint to a target position
+# Provides feedback during motion execution
+
+# Goal - what to achieve
+string joint_name           # Name of the joint to move
+float64 target_position     # Target position in radians
+float64 max_velocity        # Maximum velocity for motion in rad/s
+---
+# Result - final outcome
+float64 final_position      # Actual final position achieved
+float64 error               # Position error (target - final)
+bool success                # True if motion completed successfully
+string message              # Status message
+---
+# Feedback - progress updates during execution
+float64 current_position    # Current joint position
+float64 remaining_distance  # Distance to target in radians
+float64 elapsed_time        # Time since motion started in seconds
